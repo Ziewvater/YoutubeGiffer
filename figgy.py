@@ -88,7 +88,7 @@ def upload_gif(youtube_url):
             logging.info("Uploaded gif: %s" % gfy_result)
             return gfy_url
 
-def tweet_gif(youtube_url):
+def tweet_gif(youtube_url, tweet=None):
     '''
     Tweets a randomly created gif from a youtube video.
 
@@ -102,18 +102,49 @@ def tweet_gif(youtube_url):
     else:
         logging.info("Gif created, posting to twitter")
         try:
-            tweet = api.update_status(status=str(url))
+            if tweet is not None:
+                # Respond to given tweet
+                tweet_text = "@%s %s" % (tweet.user.screen_name, str(url))
+                tweet = api.update_status(
+                    status=tweet_text,
+                    in_reply_to_status_id=tweet.id)
+            else:
+                # Just post the thing
+                tweet = api.update_status(status=str(url))
         except Exception, e:
             logging.error("Error updating twitter status")
             logging.exception(e)
         else:
             logging.debug("Posted URL for youtube video %s" % youtube_url)
             logging.debug(tweet)
-    
 
+def respond_to_mentions():
+    '''
+    Searches through mentions, finds mentions with youtube links, 
+    responds to those tweets with a random gif from the youtube video.
+    '''
+    mentions = tweet_parser.find_mentions_with_youtubes(api)
+    if len(mentions) > 0:
+        # We are in business!
+        logging.info("Found %i youtube tweets" % len(mentions))
+        for (tweet, youtube_url) in mentions:
+            try:
+                tweet_gif(youtube_url, tweet)
+            except Exception:
+                logging.error("Failed to respond to tweet! (%s)" %\
+                 tweet.text)
+                logging.exception(e)
+                logging.debug("continuing with responding to tweets")
+            else:
+                logging.info("Responded to tweet: %s" % tweet.text)
+    else:
+        # No tweets :(
+        logging.info("No youtube mentions found")
 
 if __name__ == "__main__":
-    print "Testing tweeting gif"
+    # print "Testing tweeting gif"
     # tweet_gif("https://www.youtube.com/watch?v=cV9p5SG-5-o")
     # tweet_gif("https://www.youtube.com/watch?v=N2bCc0EGP6U")
     # tweet_gif("https://www.youtube.com/watch?v=GN2iWN8VbhM")
+    print "Testing replying to tweets"
+    respond_to_mentions()

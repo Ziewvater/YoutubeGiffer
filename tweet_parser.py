@@ -50,4 +50,3 @@ def find_mentions_with_youtubes(api):
             # No mentions :(
             logging.debug("No mentions found")
             return []
-
