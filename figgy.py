@@ -3,6 +3,7 @@
 import yubtub
 import gfycat
 import tweepy
+import tweet_parser
 import time
 import logging
 import sys
@@ -71,15 +72,16 @@ def upload_gif(youtube_url):
     :return: URL to the gfycat page for the gif
     '''
     try:
-        logging.debug("Downloading video from %s" % youtube_url)
         gif_filename = yubtub.generate_gif(youtube_url)
     except Exception, e:
         logging.exception(e)
+        raise e
     else:   
-        logging.debug("Downloaded video from youtube")
         try:
+            logging.debug("Uploading gif to gfycat")
             gfy_result = gfycat.gfycat().uploadFile(gif_filename)
         except Exception, e:
+            logging.error("Could not upload gif to gfycat")
             logging.excpetion(e)
         else:
             gfy_url = "http://gfycat.com/" + gfy_result.get("gfyName")
@@ -99,11 +101,19 @@ def tweet_gif(youtube_url):
         logging.excpetion(e)
     else:
         logging.info("Gif created, posting to twitter")
-        api.update_status(url)
-        logging.debug("Posted URL for youtube video %s" % youtube_url)
+        try:
+            tweet = api.update_status(status=str(url))
+        except Exception, e:
+            logging.error("Error updating twitter status")
+            logging.exception(e)
+        else:
+            logging.debug("Posted URL for youtube video %s" % youtube_url)
+            logging.debug(tweet)
     
+
 
 if __name__ == "__main__":
     print "Testing tweeting gif"
     # tweet_gif("https://www.youtube.com/watch?v=cV9p5SG-5-o")
-    tweet_gif("https://www.youtube.com/watch?v=N2bCc0EGP6U")
+    # tweet_gif("https://www.youtube.com/watch?v=N2bCc0EGP6U")
+    # tweet_gif("https://www.youtube.com/watch?v=GN2iWN8VbhM")
