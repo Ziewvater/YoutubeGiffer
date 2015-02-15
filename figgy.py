@@ -58,9 +58,29 @@ logger.addHandler(ch)
 #####################
 # Configuring Twitter
 #####################
-from keys import keys
-auth = tweepy.OAuthHandler(keys['consumer_token'], keys['consumer_secret'])
-auth.set_access_token(keys['access_key'], keys['access_secret'])
+# Grab authentication stuff from env
+consumer_token = os.environ.get("CONSUMER_TOKEN")
+consumer_secret = os.environ.get("CONSUMER_SECRET")
+access_key = os.environ.get("ACCESS_KEY")
+access_secret = os.environ.get("ACCESS_SECRET")
+
+if consumer_token is None or consumer_secret is None\
+ or access_key is None or access_secret is None:
+    # If the environment doesn't have that info, grab it from the keys file
+    from keys import keys
+    if keys is not None:
+        consumer_token = keys["consumer_token"]
+        consumer_secret = keys["consumer_secret"]
+        access_key = keys["access_key"]
+        access_secret = keys["access_secret"]
+
+    # If the keys file doesn't have all that info, throw exception
+    if consumer_token is None or consumer_secret is None\
+     or access_key is None or access_secret is None:
+        raise Exception("No authentication information found")
+        
+auth = tweepy.OAuthHandler(consumer_token, consumer_secret)
+auth.set_access_token(access_key, access_secret)
 api = tweepy.API(auth)
 
 
