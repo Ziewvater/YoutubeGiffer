@@ -194,7 +194,7 @@ def register_tweet(tweet, reply):
     '''
     with dataset.connect(db_url) as database:
         table = database['tweets']
-        gif_url = reply.entities['urls'][0]
+        gif_url = reply.entities['urls'][0]["expanded_url"]
         table.insert(dict(tweet_id=tweet.id, reply_id=reply.id,\
          gif_url=gif_url))
 
