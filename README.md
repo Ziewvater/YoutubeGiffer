@@ -26,4 +26,5 @@ db['tweets'].create_column('gif_url', sqlalchemy.types.String)
 
 Notes
 -----
-Need to remember to include OpenCV in the install script
+~~Need to remember to include OpenCV in the install script~~
+Using a [buildpack](https://github.com/diogojc/heroku-buildpack-python-opencv-scipy) for OpenCV
