@@ -13,6 +13,17 @@ keys = {
 }
 ```
 
+Database Creation
+-----------------
+```
+import dataset, sqlalchemy
+db = dataset.connect(DATABASE_URL)
+db.create_table('tweets')
+db['tweets'].create_column('tweet_id', sqlalchempy.types.BigInteger)
+db['tweets'].create_column('reply_id', sqlalchemy.types.BigInteger)
+db['tweets'].create_column('gif_url', sqlalchemy.types.String)
+```
+
 Notes
 -----
 Need to remember to include OpenCV in the install script
