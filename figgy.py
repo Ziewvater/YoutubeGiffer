@@ -167,7 +167,7 @@ def respond_to_mentions():
                     % (tweet.text, tweet.id))
                 try:
                     new_tweet = tweet_gif(youtube_url, tweet)
-                except Exception:
+                except Exception as e:
                     logging.error("Failed to respond to tweet! (<%s, %i>)" \
                         % (tweet.text, tweet.id))
                     logging.exception(e)
