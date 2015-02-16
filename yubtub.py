@@ -8,7 +8,7 @@ import os
 gif_folder_path = "gifs/"
 videos_folder_path = "Videos/"
 MAX_VIDEO_DIMENSION = 360.0
-RESIZE_VIDEO = True
+RESIZE_VIDEO = False#True
 
 ####################
 # Methods and Such
