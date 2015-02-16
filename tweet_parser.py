@@ -33,7 +33,7 @@ def find_mentions_with_youtubes(api):
     '''
     try:
         mentions = api.mentions_timeline()
-    except Exception, e:
+    except Exception as e:
         logging.exception(e)
         raise e
     else:

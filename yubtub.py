@@ -36,7 +36,7 @@ def grab_video(url):
                 video.download(videos_folder_path)
                 logging.debug("Downloaded video \""+video.filename+"\"")
                 return new_vid_filename
-        except Exception, e:
+        except Exception as e:
             logging.error("Could not download video from URL: %s" % url)
             raise e
     else:
@@ -81,7 +81,7 @@ def generate_gif(url):
     filename = ""
     try:
         filename = grab_video(url)
-    except Exception, e:
+    except Exception as e:
         logging.error("Couldn't download video Youtube")
         logging.exception(e)
         raise e

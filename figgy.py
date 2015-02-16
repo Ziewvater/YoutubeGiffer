@@ -103,14 +103,14 @@ def upload_gif(youtube_url):
     '''
     try:
         gif_filename = yubtub.generate_gif(youtube_url)
-    except Exception, e:
+    except Exception as e:
         logging.exception(e)
         raise e
     else:   
         try:
             logging.debug("Uploading gif to gfycat")
             gfy_result = gfycat.gfycat().uploadFile(gif_filename)
-        except Exception, e:
+        except Exception as e:
             logging.error("Could not upload gif to gfycat")
             logging.excpetion(e)
         else:
@@ -129,7 +129,7 @@ def tweet_gif(youtube_url, tweet=None):
     try:
         logging.debug("Uploading gif from youtube: %s" % youtube_url)
         url = upload_gif(youtube_url);
-    except Exception, e:
+    except Exception as e:
         logging.excpetion(e)
     else:
         logging.info("Gif created, posting to twitter")
@@ -145,7 +145,7 @@ def tweet_gif(youtube_url, tweet=None):
                 tweet = api.update_status(status=str(url))
             # Return the tweet for logging, etc.
             return tweet
-        except Exception, e:
+        except Exception as e:
             logging.error("Error updating twitter status")
             logging.exception(e)
         else:
