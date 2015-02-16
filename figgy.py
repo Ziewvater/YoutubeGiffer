@@ -12,10 +12,7 @@ import dataset
 import urlparse
 
 urlparse.uses_netloc.append("postgres")
-env_url = os.environ.get("DATABASE_URL")
-db_url = None
-if env_url is not None:
-    db_url = urlparse.urlparse(env_url)
+db_url = os.environ.get("DATABASE_URL")
 
 if db_url is None:
     from keys import database_url
