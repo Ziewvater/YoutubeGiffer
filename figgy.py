@@ -105,7 +105,7 @@ def upload_gif(youtube_url):
             gfy_result = gfycat.gfycat().uploadFile(gif_filename)
         except Exception as e:
             logging.error("Could not upload gif to gfycat")
-            logging.excpetion(e)
+            logging.exception(e)
         else:
             gfy_url = "http://gfycat.com/" + gfy_result.get("gfyName")
             logging.info("Uploaded gif: %s" % gfy_result)
