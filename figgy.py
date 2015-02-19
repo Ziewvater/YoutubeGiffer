@@ -1,6 +1,7 @@
 # Fetch video, create gif, upload to gfycat, post to twitter
 
 import yubtub
+from yubtub import VideoAccessForbiddenException
 import gfycat
 import tweepy
 import tweet_parser
@@ -8,16 +9,8 @@ import time
 import logging
 import sys
 import os, errno
-import dataset
-import urlparse
+import database
 
-urlparse.uses_netloc.append("postgres")
-db_url = os.environ.get("DATABASE_URL")
-
-if db_url is None:
-    from keys import database_url
-    print "Grabbing database url from keys"
-    db_url = database_url
 
 ####################
 # Making Directories
@@ -123,34 +116,32 @@ def tweet_gif(youtube_url, tweet=None):
     Tweets a randomly created gif from a youtube video.
 
     :youtube_url: URL of the youtube video to gif
+    :tweet: The tweet that the gif is in response to
 
     :return: The tweet generated with the gif
     '''
+    logging.debug("Uploading gif from youtube: %s" % youtube_url)
+    url = upload_gif(youtube_url);
+    logging.info("Gif created, posting to twitter")
     try:
-        logging.debug("Uploading gif from youtube: %s" % youtube_url)
-        url = upload_gif(youtube_url);
-    except Exception as e:
-        logging.excpetion(e)
-    else:
-        logging.info("Gif created, posting to twitter")
-        try:
-            if tweet is not None:
-                # Respond to given tweet
-                tweet_text = "@%s %s" % (tweet.user.screen_name, str(url))
-                tweet = api.update_status(
-                    status=tweet_text,
-                    in_reply_to_status_id=tweet.id)
-            else:
-                # Just post the thing
-                tweet = api.update_status(status=str(url))
-            # Return the tweet for logging, etc.
-            return tweet
-        except Exception as e:
-            logging.error("Error updating twitter status")
-            logging.exception(e)
+        if tweet is not None:
+            # Respond to given tweet
+            tweet_text = "@%s %s" % (tweet.user.screen_name, str(url))
+            tweet = api.update_status(
+                status=tweet_text,
+                in_reply_to_status_id=tweet.id
+                )
         else:
-            logging.debug("Posted URL for youtube video %s" % youtube_url)
-            logging.debug(tweet)
+            # Just post the thing
+            tweet = api.update_status(status=str(url))
+        # Return the tweet for logging, etc.
+        return tweet
+    except Exception as e:
+        logging.error("Error updating twitter status")
+        logging.exception(e)
+    else:
+        logging.debug("Posted URL for youtube video %s" % youtube_url)
+        logging.debug(tweet)
 
 def respond_to_mentions():
     '''
@@ -161,56 +152,45 @@ def respond_to_mentions():
     if len(mentions) > 0:
         # We are in business!
         logging.info("Found %i youtube tweets" % len(mentions))
+
+        # Check against database to find the hot fresh content
+        db = database.Database()
+        hot_new_tweets = []
         for (tweet, youtube_url) in mentions:
-            if not check_for_existing_reply(tweet):
-                logging.debug("Found new mention: <%s, %i>" \
-                    % (tweet.text, tweet.id))
-                try:
-                    new_tweet = tweet_gif(youtube_url, tweet)
-                except Exception as e:
-                    logging.error("Failed to respond to tweet! (<%s, %i>)" \
-                        % (tweet.text, tweet.id))
-                    logging.exception(e)
-                    logging.debug("continuing with responding to tweets")
+            if not db.check_for_existing_reply(tweet):
+                if not db.is_youtube_invalid(youtube_url):
+                    hot_new_tweets.append((tweet, youtube_url))
                 else:
-                    logging.info("Responded to tweet: <%s, %i> with new \
-                        tweet <%s, %i>" % (tweet.text, tweet.id,\
-                         new_tweet.text, new_tweet.id))
-                    # Register tweet in database
-                    logging.debug("Registering tweet: <%s, %i>" \
-                        % (tweet.text, tweet.id))
-                    register_tweet(tweet, new_tweet)
+                    logging.debug("YouTube URL invalid: %s" % youtube_url)
             else:
-                # Have already responded to this tweet, just let it go
-                logging.debug("Already replied to tweet: <%s, %i>" \
+                logging.debug("Already replied to tweet: <%s, %i>"\
                     % (tweet.text, tweet.id))
+
+
+        logging.info("%i new tweets" % len(hot_new_tweets))
+        for (tweet, youtube_url) in hot_new_tweets:
+            logging.debug("New mention: <%s, %i>" % (tweet.text, tweet.id))
+            try:
+                new_tweet = tweet_gif(youtube_url, tweet)
+            except VideoAccessForbiddenException as e:
+                logging.error("Download failed, Forbidden")
+                db.mark_youtube_invalid(youtube_url)
+            except Exception as e:
+                logging.error("Failed to respond to tweet! (<%s, %i>)" \
+                    % (tweet.text, tweet.id))
+                logging.exception(e)
+                logging.debug("continuing with responding to tweets")
+            else:
+                logging.info("Responded to tweet: <%s, %i> with new \
+                    tweet <%s, %i>" % (tweet.text, tweet.id,\
+                     new_tweet.text, new_tweet.id))
+                # Register tweet in database
+                logging.debug("Registering tweet: <%s, %i>" \
+                    % (tweet.text, tweet.id))
+                db.register_tweet(tweet, new_tweet)
     else:
         # No tweets :(
         logging.info("No youtube mentions found")
-
-def register_tweet(tweet, reply):
-    '''
-    Registers a tweet as having been replied to in the database
-    '''
-    with dataset.connect(db_url) as database:
-        table = database['tweets']
-        gif_url = reply.entities['urls'][0]["expanded_url"]
-        table.insert(dict(tweet_id=tweet.id, reply_id=reply.id,\
-         gif_url=gif_url))
-
-def check_for_existing_reply(tweet):
-    '''
-    Searches the database to see if the given tweet was already replied
-    to.
-    :return: Boolean value. `True` if the given tweet has been replied
-    to previously 
-    '''
-    database = dataset.connect(db_url)
-    existing_id = database['tweets'].find_one(tweet_id=tweet.id)
-    if existing_id is not None:
-        return True
-    else:
-        return False
 
 if __name__ == "__main__":
     # When run from the CLI, this module will search for new mentions
