@@ -51,12 +51,12 @@ logging.basicConfig(
 logger = logging.getLogger('')
 logger.setLevel(logging.DEBUG)
 
-# Create stream handler to send INFO messages to console
-ch = logging.StreamHandler(sys.stdout)
-ch.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
-ch.setLevel(logging.INFO)
-# Add console handler to root logger
-logger.addHandler(ch)
+# # Create stream handler to send INFO messages to console
+# ch = logging.StreamHandler(sys.stdout)
+# ch.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
+# ch.setLevel(logging.INFO)
+# # Add console handler to root logger
+# logger.addHandler(ch)
 
 #####################
 # Configuring Twitter
@@ -195,5 +195,33 @@ def respond_to_mentions():
 if __name__ == "__main__":
     # When run from the CLI, this module will search for new mentions
     # and respond to them with gifs
-    logging.info("Starting process to search for and respond to mentions")
-    respond_to_mentions()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v", "--verbosity", help="Increase logging verbosity",
+        action="store_true")
+    parser.add_argument("-y", "--youtube", help="YouTube URL to fig")
+
+    args = parser.parse_args()
+
+    if args.verbosity:
+        # Create stream handler to send INFO messages to console
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
+        ch.setLevel(logging.DEBUG)
+        # Add console handler to root logger
+        logger.addHandler(ch)
+    else:
+        # Create stream handler to send INFO messages to console
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
+        ch.setLevel(logging.INFO)
+        # Add console handler to root logger
+        logger.addHandler(ch)
+
+    if args.youtube:
+        # If youtube is provided, just test youtube
+        logging.info("Testing with given youtube %s" % args.youtube)
+        tweet_gif(args.youtube)
+    else:
+        logging.info("Starting process to search for and respond to mentions")
+        respond_to_mentions()
