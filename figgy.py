@@ -148,7 +148,8 @@ def respond_to_mentions():
     Searches through mentions, finds mentions with youtube links, 
     responds to those tweets with a random gif from the youtube video.
     '''
-    mentions = tweet_parser.find_mentions_with_youtubes(api)
+    parser = tweet_parser.TweetParser()
+    mentions = parser.find_mentions_with_youtubes(api)
     if len(mentions) > 0:
         # We are in business!
         logging.info("Found %i youtube tweets" % len(mentions))
