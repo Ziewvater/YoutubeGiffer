@@ -156,17 +156,9 @@ def respond_to_mentions():
 
         # Check against database to find the hot fresh content
         db = database.Database()
-        hot_new_tweets = []
-        for (tweet, youtube_url) in mentions:
-            if not db.check_for_existing_reply(tweet):
-                if not db.is_youtube_invalid(youtube_url):
-                    hot_new_tweets.append((tweet, youtube_url))
-                else:
-                    logging.debug("YouTube URL invalid: %s" % youtube_url)
-            else:
-                logging.debug("Already replied to tweet: <%s, %i>"\
-                    % (tweet.text, tweet.id))
+        only_tweets = [i[0] for i in mentions]
 
+        hot_new_tweets = db.find_hot_new_tweets(only_tweets)
 
         logging.info("%i new tweets" % len(hot_new_tweets))
         for (tweet, youtube_url) in hot_new_tweets:

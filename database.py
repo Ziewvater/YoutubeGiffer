@@ -2,6 +2,7 @@
 import os
 import dataset
 import tweepy
+import tweet_parser
 
 class Database(object):
     '''
@@ -55,4 +56,68 @@ class Database(object):
         else:
             return False
 
-        
+    def filter_replied(self, tweets, database=None):
+        '''
+        Filters the given `tweets` array for tweets already replied to.
+
+        Use this method instead of `check_for_existing_reply` to reduce
+        database connect actions, cutting down on time.
+
+        :tweets: An array of tweepy Status objects
+        :database: A dataset connection to the database.
+        If not provided, this method will create a database connection
+
+        :return: An array of tweepy Status objects representing tweets
+        that have not yet been replied to.
+        '''
+        new_tweets = []
+        if database is None:
+            database = dataset.connect(self.db_url)
+        table = database.load_table('tweets')
+        for tweet in tweets:
+            existing_id = table.find_one(tweet_id=tweet.id)
+            if existing_id is None:
+                new_tweets.append(tweet)
+        return new_tweets
+
+    def filter_invalid_youtube(self, tweets, database=None):
+        '''
+        Filters the given `tweets` array for tweets with valid YouTube
+        URLs. 
+
+        "Invalid" YouTube URLs are URLs that have been tried in the past
+        and resulted in some kind of error.
+
+        :tweets: Array of tweepy Status objects
+        :database: dataset connection to the database. If not provided,
+        this method will create one for itself.
+
+        :return: an array of tweepy Status objects that contain YouTube
+        URLs that are yet to be determined as invalid.
+        '''
+        valid_tweets = []
+        if database is None:
+            database = dataset.connect(self.db_url)
+        table = database.load_table('youtubes')
+        parser = tweet_parser.TweetParser()
+        for tweet in tweets:
+            youtube_url = parser.find_youtube_url(tweet)
+            existing_youtube = table.find_one(youtube_url=youtube_url)
+            if existing_youtube is None:
+                valid_tweets.append(tweet)
+        return valid_tweets
+
+    def find_hot_new_tweets(self, tweets):
+        '''
+        Filters the given array of tweets, removing tweets that have
+        already been replied to or have YouTube links that have not 
+        worked in the past.
+
+        :tweets: Array of tweepy Status objects
+
+        :return: Array of tweepy Status objects
+        '''
+        database = dataset.connect(self.db_url)
+        return self.filter_invalid_youtube(
+            self.filter_replied(tweets, database=database),
+            database=database)
