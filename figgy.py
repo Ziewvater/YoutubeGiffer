@@ -172,17 +172,23 @@ class Figgy(object):
         logging.debug("Uploading gif from youtube: %s" % youtube_url)
         url = self.upload_gif(youtube_url);
         logging.info("Gif created, posting to twitter")
+
+        post_tweets = True
+        if hasattr(self, "dry_run"):
+            post_tweets = not getattr(self, "dry_run")
         try:
             if tweet is not None:
                 # Respond to given tweet
                 tweet_text = "@%s %s" % (tweet.user.screen_name, str(url))
-                tweet = self.api.update_status(
-                    status=tweet_text,
-                    in_reply_to_status_id=tweet.id
-                    )
+                if post_tweets:
+                    tweet = self.api.update_status(
+                        status=tweet_text,
+                        in_reply_to_status_id=tweet.id
+                        )
             else:
                 # Just post the thing
-                tweet = self.api.update_status(status=str(url))
+                if post_tweets:
+                    tweet = self.api.update_status(status=str(url))
             # Return the tweet for logging, etc.
             return tweet
         except Exception as e:
@@ -239,6 +245,7 @@ if __name__ == "__main__":
     # and respond to them with gifs
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dry-run", help="performs tasks but without posting to twitter", action="store_true")
     parser.add_argument("-v", "--verbosity", help="Increase logging verbosity",
         action="store_true")
     parser.add_argument("-y", "--youtube", help="YouTube URL to fig")
@@ -260,12 +267,15 @@ if __name__ == "__main__":
         # Add console handler to root logger
         logger.addHandler(ch)
 
+    fig = Figgy()
+
+    if args.dry_run:
+        setattr(Figgy, "dry_run", True)
+
     if args.youtube:
         # If youtube is provided, just test youtube
         logging.info("Testing with given youtube %s" % args.youtube)
-        fig = Figgy()
         fig.tweet_gif(args.youtube)
     else:
         logging.info("Starting process to search for and respond to mentions")
-        fig = Figgy()
         fig.respond_to_mentions()
