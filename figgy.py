@@ -136,7 +136,8 @@ class Figgy(object):
         :return: URL to the gfycat page for the gif
         '''
         try:
-            gif_filename = yubtub.generate_gif(youtube_url)
+            yubtub = yubtub.YubTub(youtube_url)
+            gif_filename = yubtub.generate_gif()
         except Exception as e:
             logging.exception(e)
             raise e
